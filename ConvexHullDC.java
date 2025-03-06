@@ -4,15 +4,16 @@ class ConvexHullDC {
 
     public static List<Point> convexHullDivideAndConquer(List<Point> points) {
         if (points.size() <= 2) {
-            return points;  // Ensure at least 2 points are returned
+            return new ArrayList<>(points);  // Ensure at least 2 points are returned
         }
 
+        // Sort points by x-coordinate to maintain correct order
+        points.sort(Comparator.comparingDouble(p -> p.x));
 
-
-        //Divide the points into two halves
+        // Divide the points into two halves
         int mid = points.size() / 2;
-        List<Point> leftHull = convexHullDivideAndConquer(points.subList(0, mid));
-        List<Point> rightHull = convexHullDivideAndConquer(points.subList(mid, points.size()));
+        List<Point> leftHull = convexHullDivideAndConquer(new ArrayList<>(points.subList(0, mid)));
+        List<Point> rightHull = convexHullDivideAndConquer(new ArrayList<>(points.subList(mid, points.size())));
 
         List<Point> mergedHull = mergeHulls(leftHull, rightHull);
         
@@ -21,8 +22,6 @@ class ConvexHullDC {
             System.out.println("Error: Merged hull is empty!");
         }   
         return mergedHull;
-        
-        //Merge the two convex hulls
     }
 
     private static List<Point> mergeHulls(List<Point> leftHull, List<Point> rightHull) {
@@ -65,8 +64,7 @@ class ConvexHullDC {
                 lowerLeft = (lowerLeft + 1) % leftHull.size();
                 lowerTangentFound = false;
             }
-}
-
+        }
     
         // Debugging: Print the computed tangents
         System.out.println("Upper tangent: Left[" + upperLeft + "] -> Right[" + upperRight + "]");
@@ -99,9 +97,6 @@ class ConvexHullDC {
         return mergedHull;
     }
     
-    
-    
-
     private static int findRightmost(List<Point> hull) {
         int index = 0;
         System.out.println("Finding rightmost point in hull: " + hull);
@@ -125,6 +120,4 @@ class ConvexHullDC {
         System.out.println("Leftmost point found: " + hull.get(index));
         return index;
     }
-    
-    
 }
