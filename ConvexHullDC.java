@@ -22,10 +22,22 @@ class ConvexHullDC {
     }
 
     private static int findRightmost(List<Point> hull) {
-        return 0;
+        int index = 0; 
+        for (int i = 1; i < hull.size(); i++) {
+            if (hull.get(i).x > hull.get(index).x) {
+                index = i;
+            }
+        }
+        return index;
     }
 
     private static int findLeftmost(List<Point> hull) {
-        return 0; // Placeholder implementation
+        int index = 0;
+        for (int i = 1; i < hull.size(); i++) {
+            if (hull.get(i).x < hull.get(index).x) {
+                index = i;
+            }
+        }
+        return index;
     }
 }
