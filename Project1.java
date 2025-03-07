@@ -31,7 +31,7 @@ public class Project1 {
 
     public static void main(String[] args) throws Exception {
         // Step 1: Read input points from the CSV file
-        System.out.println("Code works");
+        System.out.println("Reading input...");
 
         List<Point> points = readFile("input.csv");
 
@@ -41,7 +41,8 @@ public class Project1 {
         // Step 3: Write the output to output.txt
         writeFile("testOutput.txt", hull);
 
-        System.out.println("Convex Hull computation complete! Output saved in output.txt.");
-        // Step 3: Write the convex hull indices to the
+        System.out.println("Convex Hull computation complete! Output saved in testOutput.txt.");
     }
 }
+
+
