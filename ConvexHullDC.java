@@ -1,185 +1,188 @@
 import java.util.*;
 
 public class ConvexHullDC {
+    private static List<Point> points; // This will store all points
 
-    public static List<Point> convexHullDivideAndConquer(List<Point> points) {
+    public static List<Point> convexHullDivideAndConquer(List<Point> inputPoints) {
+        points = new ArrayList<>(inputPoints); // Store all points
+        
         if (points.size() <= 2) {
             return points;  // Ensure at least 2 points are returned
         }
 
-        // Sort points before processing
-        Collections.sort(points, new Comparator<Point>() {
-        @Override
-        public int compare(Point p1, Point p2) {
-            return Double.compare(p1.x, p2.x);
-          }
-        });
+        // Sort points by x-coordinate
+        Collections.sort(points);
         System.out.println("Sorted Points: " + points);
 
-        // Divide the points into two halves
-        int mid = points.size() / 2;
-        List<Point> leftHull = convexHullDivideAndConquer(points.subList(0, mid));
-        List<Point> rightHull = convexHullDivideAndConquer(points.subList(mid, points.size()));
+        // Create list of indices instead of actual points
+        List<Integer> indices = new ArrayList<>();
+        for (int i = 0; i < points.size(); i++) {
+            indices.add(i);
+        }
 
-        System.out.println("All points before merging: " + leftHull + " + " + rightHull);
+        // Call the divide and conquer algorithm on indices
+        List<Integer> hullIndices = divideAndConquerHull(indices);
+        
+        // Convert indices back to points
+        List<Point> hull = new ArrayList<>();
+        for (Integer idx : hullIndices) {
+            hull.add(points.get(idx));
+        }
 
-
-        List<Point> mergedHull = mergeHulls(leftHull, rightHull);
-
-        System.out.println("Merged hull size: " + mergedHull.size() + " Points: " + mergedHull);
-        if (mergedHull.isEmpty()) {
+        System.out.println("Merged hull size: " + hull.size() + " Points: " + hull);
+        if (hull.isEmpty()) {
             System.out.println("Error: Merged hull is empty!");
-        }   
-        return mergedHull;
+        }
+        return hull;
     }
 
-    static List<Point> mergeHulls(List<Point> leftHull, List<Point> rightHull) {
-        // Find the upper and lower tangents
-        int upperLeft = leftHull.size() - 1;
-        int upperRight = 0;
-        int lowerLeft = leftHull.size() - 1;
-        int lowerRight = 0;
-    
+    // Recursive method to compute convex hull with indices
+    private static List<Integer> divideAndConquerHull(List<Integer> indices) {
+        if (indices.size() <= 2) {
+            return new ArrayList<>(indices);
+        }
+
+        // Divide the indices into two halves
+        int mid = indices.size() / 2;
+        List<Integer> leftIndices = new ArrayList<>(indices.subList(0, mid));
+        List<Integer> rightIndices = new ArrayList<>(indices.subList(mid, indices.size()));
+
+        // Recursively compute hulls for each half
+        List<Integer> leftHull = divideAndConquerHull(leftIndices);
+        List<Integer> rightHull = divideAndConquerHull(rightIndices);
+
+        // Merge the two hulls
+        return mergeHulls(leftHull, rightHull);
+    }
+
+    // Implement the mergeHulls method from the text file
+    private static List<Integer> mergeHulls(List<Integer> leftHull, List<Integer> rightHull) {
+        // Find the rightmost point of the left hull
+        int leftRightmost = 0;
+        for (int i = 1; i < leftHull.size(); i++) {
+            if (points.get(leftHull.get(i)).x > points.get(leftHull.get(leftRightmost)).x) {
+                leftRightmost = i;
+            }
+        }
+        
+        // Find the leftmost point of the right hull
+        int rightLeftmost = 0;
+        for (int i = 1; i < rightHull.size(); i++) {
+            if (points.get(rightHull.get(i)).x < points.get(rightHull.get(rightLeftmost)).x) {
+                rightLeftmost = i;
+            }
+        }
+        
+        // Find the upper tangent
+        int upperLeft = leftRightmost;
+        int upperRight = rightLeftmost;
+        
         boolean upperDone = false;
         while (!upperDone) {
             upperDone = true;
-            while (crossProduct(rightHull.get(upperRight), leftHull.get(upperLeft), leftHull.get((upperLeft - 1 + leftHull.size()) % leftHull.size())) < 0) {
-                upperLeft = (upperLeft - 1 + leftHull.size()) % leftHull.size();
+            
+            // Move counterclockwise on left hull
+            while (true) {
+                int next = (upperLeft + 1) % leftHull.size();
+                Point a = points.get(leftHull.get(upperLeft));
+                Point b = points.get(rightHull.get(upperRight));
+                Point c = points.get(leftHull.get(next));
+                
+                if (crossProduct(c, a, b) > 0) {
+                    upperLeft = next;
+                    upperDone = false;
+                } else {
+                    break;
+                }
             }
-            while (crossProduct(leftHull.get(upperLeft), rightHull.get(upperRight), rightHull.get((upperRight + 1) % rightHull.size())) > 0) {
-                upperRight = (upperRight + 1) % rightHull.size();
-                upperDone = false;
+            
+            // Move clockwise on right hull
+            while (true) {
+                int next = (upperRight - 1 + rightHull.size()) % rightHull.size();
+                Point a = points.get(leftHull.get(upperLeft));
+                Point b = points.get(rightHull.get(upperRight));
+                Point c = points.get(rightHull.get(next));
+                
+                if (crossProduct(a, c, b) < 0) {
+                    upperRight = next;
+                    upperDone = false;
+                } else {
+                    break;
+                }
             }
         }
-    
+        
+        // Find the lower tangent
+        int lowerLeft = leftRightmost;
+        int lowerRight = rightLeftmost;
+        
         boolean lowerDone = false;
         while (!lowerDone) {
             lowerDone = true;
-            while (crossProduct(rightHull.get(lowerRight), leftHull.get(lowerLeft), leftHull.get((lowerLeft + 1) % leftHull.size())) > 0) {
-                lowerLeft = (lowerLeft + 1) % leftHull.size();
+            
+            // Move clockwise on left hull
+            while (true) {
+                int next = (lowerLeft - 1 + leftHull.size()) % leftHull.size();
+                Point a = points.get(leftHull.get(lowerLeft));
+                Point b = points.get(rightHull.get(lowerRight));
+                Point c = points.get(leftHull.get(next));
+                
+                if (crossProduct(c, a, b) < 0) {
+                    lowerLeft = next;
+                    lowerDone = false;
+                } else {
+                    break;
+                }
             }
-            while (crossProduct(leftHull.get(lowerLeft), rightHull.get(lowerRight), rightHull.get((rightHull.size() + lowerRight - 1) % rightHull.size())) < 0) {
-                lowerRight = (rightHull.size() + lowerRight - 1) % rightHull.size();
-                lowerDone = false;
+            
+            // Move counterclockwise on right hull
+            while (true) {
+                int next = (lowerRight + 1) % rightHull.size();
+                Point a = points.get(leftHull.get(lowerLeft));
+                Point b = points.get(rightHull.get(lowerRight));
+                Point c = points.get(rightHull.get(next));
+                
+                if (crossProduct(a, c, b) > 0) {
+                    lowerRight = next;
+                    lowerDone = false;
+                } else {
+                    break;
+                }
             }
         }
-    
-        // Merging process: Walk from upperLeft to lowerLeft on leftHull, then from lowerRight to upperRight on rightHull
-        List<Point> mergedHull = new ArrayList<>();
-    
-        // Add points from left hull
+        
+        // Merge hulls by walking along the border
+        List<Integer> mergedHull = new ArrayList<>();
+        
+        // Start at the upper left tangent point
         int idx = upperLeft;
+        
+        // Follow the left hull from upper tangent to lower tangent
         while (idx != lowerLeft) {
             mergedHull.add(leftHull.get(idx));
             idx = (idx + 1) % leftHull.size();
         }
         mergedHull.add(leftHull.get(lowerLeft));
-    
-        // Add points from right hull
+        
+        // Follow the right hull from lower tangent to upper tangent
         idx = lowerRight;
-        while (idx != upperRight) {
-            mergedHull.add(rightHull.get(idx));
-            idx = (idx + 1) % rightHull.size();
+        if (upperRight != lowerRight) {
+            while (idx != upperRight) {
+                mergedHull.add(rightHull.get(idx));
+                idx = (idx + 1) % rightHull.size();
+            }
         }
-        mergedHull.add(rightHull.get(upperRight));
-    
-        System.out.println("Final Merged Hull: " + mergedHull);
+        
+        // Only add the upper right point if it's not already in the hull
+        if (!mergedHull.contains(rightHull.get(upperRight))) {
+            mergedHull.add(rightHull.get(upperRight));
+        }
+        
         return mergedHull;
     }
     
-    // Find upper tangent
-    static int findUpperTangent(List<Point> leftHull, List<Point> rightHull) {
-        int upperLeft = leftHull.size() - 1;
-        int upperRight = 0;
-
-        boolean done = false;
-        while (!done) {
-            done = true;
-            while (crossProduct(rightHull.get(upperRight), leftHull.get(upperLeft), leftHull.get((upperLeft - 1 + leftHull.size()) % leftHull.size())) < 0) {
-                upperLeft = (upperLeft - 1 + leftHull.size()) % leftHull.size();
-            }
-            while (crossProduct(leftHull.get(upperLeft), rightHull.get(upperRight), rightHull.get((upperRight + 1) % rightHull.size())) > 0) {
-                upperRight = (upperRight + 1) % rightHull.size();
-                done = false;
-            }
-        }
-
-        System.out.println("Upper tangent found: " + leftHull.get(upperLeft) + " -> " + rightHull.get(upperRight));
-        return upperRight;
-    }
-
-    // Find lower tangent
-    static int findLowerTangent(List<Point> leftHull, List<Point> rightHull) {
-        int lowerLeft = leftHull.size() - 1;
-        int lowerRight = 0;
-
-        boolean done = false;
-        while (!done) {
-            done = true;
-            while (crossProduct(rightHull.get(lowerRight), leftHull.get(lowerLeft), leftHull.get((lowerLeft + 1) % leftHull.size())) > 0) {
-                lowerLeft = (lowerLeft + 1) % leftHull.size();
-            }
-            while (crossProduct(leftHull.get(lowerLeft), rightHull.get(lowerRight), rightHull.get((rightHull.size() + lowerRight - 1) % rightHull.size())) < 0) {
-                lowerRight = (rightHull.size() + lowerRight - 1) % rightHull.size();
-                done = false;
-            }
-        }
-
-        System.out.println("Lower tangent found: " + leftHull.get(lowerLeft) + " -> " + rightHull.get(lowerRight));
-        return lowerRight;
-    }
-
-    // Cross product calculation
-    static double crossProduct(Point a, Point b, Point c) {
+    // Helper method for cross product
+    private static double crossProduct(Point a, Point b, Point c) {
         return (b.x - a.x) * (c.y - a.y) - (b.y - a.y) * (c.x - a.x);
-    }
-
-    // Method to find the lower tangent
-    static int findLowerTangent(List<Point> leftHull, List<Point> rightHull, int upperLeft, int upperRight) {
-        int lowerLeft = upperLeft;
-        int lowerRight = upperRight;
-
-        System.out.println("Finding lower tangent...");
-        boolean lowerTangentFound = false;
-        while (!lowerTangentFound) {
-            lowerTangentFound = true;
-            while (crossProduct(leftHull.get(lowerLeft), rightHull.get(lowerRight),
-                    rightHull.get((lowerRight - 1 + rightHull.size()) % rightHull.size())) > 0) {
-                lowerRight = (lowerRight - 1 + rightHull.size()) % rightHull.size();
-                lowerTangentFound = false;
-            }
-            while (crossProduct(rightHull.get(lowerRight), leftHull.get(lowerLeft),
-                    leftHull.get((lowerLeft + 1) % leftHull.size())) < 0) {
-                lowerLeft = (lowerLeft + 1) % leftHull.size();
-                lowerTangentFound = false;
-            }
-        }
-
-        System.out.println("Lower tangent found: " + leftHull.get(lowerLeft) + " -> " + rightHull.get(lowerRight));
-        return lowerRight;
-    }
-
-    private static int findRightmost(List<Point> hull) {
-        int index = 0;
-        System.out.println("Finding rightmost point in hull: " + hull);
-        for (int i = 1; i < hull.size(); i++) {
-            if (hull.get(i).x > hull.get(index).x) {
-                index = i;
-            }
-        }
-        System.out.println("Rightmost point found: " + hull.get(index));
-        return index;
-    }
-    
-    private static int findLeftmost(List<Point> hull) {
-        int index = 0;
-        System.out.println("Finding leftmost point in hull: " + hull);
-        for (int i = 1; i < hull.size(); i++) {
-            if (hull.get(i).x < hull.get(index).x) {
-                index = i;
-            }
-        }
-        System.out.println("Leftmost point found: " + hull.get(index));
-        return index;
     }
 }
